@@ -5,7 +5,10 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="<c:url value='/css/bootstrap.min.css'/>"/>
+    <link rel="stylesheet" type="text/css" href="<c:url value='/css/fourstate.css'/>"/>
     <script src="<c:url value='/scripts/jquery-2.1.4.js'/>"></script>
+    <script src="<c:url value='/scripts/fourstate.js'/>"></script>
+
     <style>
         .scanner {
             width: 640px;
@@ -40,15 +43,6 @@
 
         #video {
             margin-top: -215px;
-        }
-
-        .address {
-            border-style: solid;
-            border-width: 1px;
-            border-radius: 5px;
-            border-color: grey;
-            margin-top: 10px;
-            font-size: 24px;
         }
     </style>
 
@@ -102,7 +96,32 @@
             // This function is extremely slow on mobile, so we need to only do it once
             // and then work with the data we get back using a local function
             var imageData = ctx.getImageData(0, 0, width, height).data;
+            var success = false;
+            for (var i = -1; i <= 1; i++) {
+                var result = scanRow(imageData, row + i, width);
+                if (result.bars.length == 37 || result.bars.length == 52 || result.bars.length == 67) {
+                    if (decodeResult(result)) {
+                        $("#scanner").removeClass("scanner-scanning scanner-failed");
+                        $("#scanner").addClass("scanner-success");
+                        clearInterval(scanTimer);
+                        var interval = setInterval(function() {
+                            clearInterval(interval);
+                            scanTimer = setInterval(function() {
+                                scan();
+                            }, 200);
+                        }, 1000);
+                        success = true;
+                        break;
+                    }
+                }
+            }
+            if (!success) {
+                $("#scanner").addClass("scanner-failed");
+                $("#scanner").removeClass("scanner-success scanner-scanning");
+            }
+        }
 
+        function scanRow(imageData, row, width) {
             var pixels = getImageData(imageData, width, 0, row, width, 1);
 
             currentBar = false;
@@ -152,57 +171,54 @@
                     bars.push(bar);
                 }
             }
+            var result = {};
+            result.lowestY = lowestY;
+            result.highestY = highestY;
+            result.bars = bars;
+            return result;
+        }
 
-            if (bars.length == 37 || bars.length == 52 || bars.length == 67) {
-                var fullBarLength = highestY - lowestY;
-                var barTolerance = fullBarLength * barLengthTolerancePercent;
+        function decodeResult(result) {
+            var fullBarLength = result.highestY - result.lowestY;
+            var barTolerance = fullBarLength * barLengthTolerancePercent;
 
-                var barString = "";
+            var barString = "";
 
-                for (var i = 0; i < bars.length; i++) {
-                    var topBar = false;
-                    var bottomBar = false;
-                    if (bars[i].minY - lowestY <= barTolerance) {
-                        topBar = true;
-                    }
-                    if (highestY - bars[i].maxY <= barTolerance) {
-                        bottomBar = true;
-                    }
-
-                    if (topBar && bottomBar) {
-                        barString += "H";
-                    } else if (topBar && !bottomBar) {
-                        barString += "A";
-                    } else if (!topBar && bottomBar) {
-                        barString += "D";
-                    } else {
-                        barString += "T";
-                    }
+            for (var i = 0; i < result.bars.length; i++) {
+                var topBar = false;
+                var bottomBar = false;
+                if (result.bars[i].minY - result.lowestY <= barTolerance) {
+                    topBar = true;
                 }
-                if (barString.startsWith("AT") && barString.endsWith("AT")) {
-                    $("#scanner").removeClass("scanner-scanning scanner-failed");
-                    $("#scanner").addClass("scanner-success");
-                    var dpid = "";
-                    for (var i = 6; i < 21; i+=2) {
-                        var pair = barString.substring(i, i + 2);
-                        dpid += barcodeStateDigits[pair];
-                    }
-                    console.log("dpid=" + dpid);
-                    $("#dpid").text(dpid);
-                    clearInterval(scanTimer);
-                    var interval = setInterval(function() {
-                        clearInterval(interval);
-                        scanTimer = setInterval(function() {
-                            scan();
-                        }, 200);
-                    }, 2000);
-                    lookupAddress(dpid);
-                    scanSound.play();
+                if (result.highestY - result.bars[i].maxY <= barTolerance) {
+                    bottomBar = true;
                 }
-            } else {
-                $("#scanner").addClass("scanner-failed");
-                $("#scanner").removeClass("scanner-success scanner-scanning");
+
+                if (topBar && bottomBar) {
+                    barString += "H";
+                } else if (topBar && !bottomBar) {
+                    barString += "A";
+                } else if (!topBar && bottomBar) {
+                    barString += "D";
+                } else {
+                    barString += "T";
+                }
             }
+            if (barString.startsWith("AT") && barString.endsWith("AT")) {
+                var dpid = "";
+                for (var i = 6; i < 21; i+=2) {
+                    var pair = barString.substring(i, i + 2);
+                    dpid += barcodeStateDigits[pair];
+                }
+                console.log("dpid=" + dpid);
+                $("#dpid").text(dpid);
+                lookupAddress(dpid, function(deliveryPoint) {
+                    $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
+                });
+                scanSound.play();
+                return true;
+            }
+            return false;
         }
 
         function getImageData(fullImageData, imageWidth, x, y, width, height) {
@@ -284,28 +300,6 @@
                 }, errBack);
             }
         }
-
-        function lookupAddress(dpid) {
-            $.ajax({
-                url: 'rest/deliveryPoint/' + dpid,
-                type: 'GET',
-                xhr: function() {
-                    var myXhr = $.ajaxSettings.xhr();
-                    if(myXhr.upload){ // Check if upload property exists
-                        //myXhr.upload.addEventListener('progress',progressHandlingFunction, false); // For handling the progress of the upload
-                    }
-                    return myXhr;
-                },
-                success: function (result) {
-                    $("#address").text(result.address);
-                },
-                //Options to tell jQuery not to process data or worry about content-type.
-                cache: false,
-                contentType: false,
-                processData: false
-            });
-        }
-
         jQuery(document).ready(function ($) {
             init();
         });

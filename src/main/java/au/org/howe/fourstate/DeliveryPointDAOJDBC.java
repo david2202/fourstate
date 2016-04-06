@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Component
 public class DeliveryPointDAOJDBC implements DeliveryPointDAO {
-    private static final String loadSQL = "SELECT dpid,address FROM DELIVERY_POINT WHERE dpid=:dpid";
+    private static final String loadSQL = "SELECT dpid,address_line_1,address_line_2 FROM DELIVERY_POINT WHERE dpid=:dpid";
 
     @Autowired
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -23,9 +23,8 @@ public class DeliveryPointDAOJDBC implements DeliveryPointDAO {
     @Override
     public DeliveryPoint load(Integer dpid) {
         SqlParameterSource sqlParameterSource = new MapSqlParameterSource("dpid", dpid);
-        DeliveryPoint deliveryPoint=namedParameterJdbcTemplate.queryForObject(loadSQL,sqlParameterSource, (resultSet, i) -> {
-            return new DeliveryPoint(resultSet.getInt("dpid"), resultSet.getString("address"));
+        return namedParameterJdbcTemplate.queryForObject(loadSQL,sqlParameterSource, (resultSet, i) -> {
+            return new DeliveryPoint(resultSet.getInt("dpid"), resultSet.getString("address_line_1"), resultSet.getString("address_line_2"));
         });
-        return deliveryPoint;
     }
 }
