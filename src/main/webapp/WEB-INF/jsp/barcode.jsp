@@ -30,10 +30,10 @@
         }
         .overlay {
             margin-left: 5px;
-            margin-top: -25px;
-            margin-bottom: 25px;
+            margin-top: -27px;
+            margin-bottom: 23px;
             width: 630px;
-            height: 1px;
+            height: 2px;
             border-style: solid;
             border-width: 2px;
             border-color: green;
@@ -67,6 +67,7 @@
         var cameraWidth = 640;
         var cameraHeight = 480;
         var scannerHeight = 50;
+        var scanRows = 4;
         var barWidth = 3;
         var barCentreOffset = Math.floor(barWidth / 2);
         var barBrightnessThreshold = 80;
@@ -97,7 +98,7 @@
             // and then work with the data we get back using a local function
             var imageData = ctx.getImageData(0, 0, width, height).data;
             var success = false;
-            for (var i = -1; i <= 1; i++) {
+            for (var i = (scanRows / -2); i <= (scanRows / 2) - 1; i++) {
                 var result = scanRow(imageData, row + i, width);
                 if (result.bars.length == 37 || result.bars.length == 52 || result.bars.length == 67) {
                     if (decodeResult(result)) {
@@ -310,7 +311,7 @@
     <div class="container">
         <div class="row">
             <div id="scanner" class="scanner scanner-failed">
-                <video id="video" width="640" autoplay translate="false"/>
+                <video id="video" width="640" autoplay muted translate="false"/>
             </div>
             <div class="overlay" />
         </div>
