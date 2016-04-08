@@ -206,13 +206,20 @@
                 }
             }
             if (barString.startsWith("AT") && barString.endsWith("AT")) {
-                var dpid = "";
-                for (var i = 6; i < 21; i+=2) {
-                    var pair = barString.substring(i, i + 2);
-                    dpid += barcodeStateDigits[pair];
+                var inf = do_decode(barString);
+                show_barcode(inf);
+                var status = inf.message;;
+                var dpid;
+
+                if (inf.damaged) {
+                    var correctedInf = do_decode(inf.barcode2);
+                    dpid = correctedInf.dpid;
+                } else {
+                    dpid = inf.dpid;
                 }
                 console.log("dpid=" + dpid);
                 $("#dpid").text(dpid);
+                $("#status").text(status);
                 lookupAddress(dpid, function(deliveryPoint) {
                     $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
                 });
@@ -315,12 +322,20 @@
             </div>
             <div class="overlay" />
         </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <script>generateBarcodeTable();</script>
+            </div>
+        </div>
         <div class="row address">
             <div class="col-xs-3">
                 <span id="dpid">DPID</span>
             </div>
-            <div class="col-xs-9">
+            <div class="col-xs-6">
                 <span id="address">Address</span>
+            </div>
+            <div class="col-xs-3">
+                <span id="status">Status</span>
             </div>
         </div>
     </div>
