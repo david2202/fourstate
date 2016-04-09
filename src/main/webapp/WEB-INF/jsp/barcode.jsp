@@ -68,8 +68,8 @@
         var cameraHeight = 480;
         var scannerHeight = 50;
         var scanRows = 4;
-        var barWidth = 3;
-        var barCentreOffset = Math.floor(barWidth / 2);
+        var maxBarWidth = Math.floor(cameraWidth / 67 / 2); // 67 column barcode with spaces
+        var barCentreOffset = Math.floor(maxBarWidth / 2);
         var barBrightnessThreshold = 80;
         var barLengthTolerancePercent = 0.20;
         var scanSound = new Audio('http://10.42.0.1:8080/sounds/scannerBeep.mp3');
@@ -123,7 +123,7 @@
         }
 
         function scanRow(imageData, row, width) {
-            currentBar = false;
+            var currentBar = false;
             var barStartCol = 0;
             var barEndCol = 0;
 
@@ -146,30 +146,36 @@
                     // We are at the end of a bar
                     currentBar = false;
                     barEndCol = col - 1;
-                    var barMidCol = Math.round(barStartCol + ((barEndCol - barStartCol) / 2))   ;
+                    var barWidth = barEndCol - barStartCol + 1;
+                    if (barWidth > maxBarWidth) {
+                        // Not a bar, so start again
+                        bars = [];
+                    } else {
+                        var barMidCol = Math.round(barStartCol + ((barEndCol - barStartCol) / 2))   ;
 
-                    var minY = 999;
-                    var maxY = -1;
+                        var minY = 999;
+                        var maxY = -1;
 
-                    for (var y = 0; y < scannerHeight; y++) {
-                        var barPixels = getImageData(imageData, width, barMidCol - barCentreOffset, y, barWidth, 1);
+                        for (var y = 0; y < scannerHeight; y++) {
+                            var barPixels = getImageData(imageData, width, barMidCol - barCentreOffset, y, maxBarWidth, 1);
 
-                        // Is any pixel in this row dark?
-                        for (var x = 0; x < barWidth; x++) {
-                            if (fnBrightness(barPixels[x*4], barPixels[(x*4)+1], barPixels[(x*4)+2]) < barBrightnessThreshold) {
-                                if (y < minY) minY = y;
-                                if (y > maxY) maxY = y;
-                                break;
+                            // Is any pixel in this row dark?
+                            for (var x = 0; x < maxBarWidth; x++) {
+                                if (fnBrightness(barPixels[x*4], barPixels[(x*4)+1], barPixels[(x*4)+2]) < barBrightnessThreshold) {
+                                    if (y < minY) minY = y;
+                                    if (y > maxY) maxY = y;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    if (minY < lowestY) lowestY = minY;
-                    if (maxY > highestY) highestY = maxY;
+                        if (minY < lowestY) lowestY = minY;
+                        if (maxY > highestY) highestY = maxY;
 
-                    var bar = {};
-                    bar.minY = minY;
-                    bar.maxY = maxY;
-                    bars.push(bar);
+                        var bar = {};
+                        bar.minY = minY;
+                        bar.maxY = maxY;
+                        bars.push(bar);
+                    }
                 }
             }
             var result = {};
