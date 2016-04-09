@@ -130,7 +130,6 @@
             var highestY = -1;
             var lowestY = 999;
             var bars = [];
-            var barIndex = 0;
 
             for (var col = 0; col < width; col++) {
                 var pixel = getPixel(imageData, width, col, row);
@@ -150,18 +149,17 @@
                     if (barWidth > maxBarWidth) {
                         // Not a bar, so start again
                         bars = [];
+                        var highestY = -1;
+                        var lowestY = 999;
                     } else {
-                        var barMidCol = Math.round(barStartCol + ((barEndCol - barStartCol) / 2))   ;
-
                         var minY = 999;
                         var maxY = -1;
 
                         for (var y = 0; y < scannerHeight; y++) {
-                            var barPixels = getImageData(imageData, width, barMidCol - barCentreOffset, y, maxBarWidth, 1);
-
                             // Is any pixel in this row dark?
-                            for (var x = 0; x < maxBarWidth; x++) {
-                                if (fnBrightness(barPixels[x*4], barPixels[(x*4)+1], barPixels[(x*4)+2]) < barBrightnessThreshold) {
+                            for (var x = barStartCol; x <= barEndCol; x++) {
+                                var barPixel = getPixel(imageData, width, x, y);
+                                if (fnBrightness(barPixel[0], barPixel[1], barPixel[2]) < barBrightnessThreshold) {
                                     if (y < minY) minY = y;
                                     if (y > maxY) maxY = y;
                                     break;
