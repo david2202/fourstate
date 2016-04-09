@@ -1,4 +1,4 @@
-function lookupAddress(dpid, success) {
+function lookupAddress(dpid, success, error) {
     $.ajax({
         url: 'rest/deliveryPoint/' + dpid,
         type: 'GET',
@@ -9,9 +9,8 @@ function lookupAddress(dpid, success) {
             }
             return myXhr;
         },
-        success:function (result) {
-            success(result);
-        },
+        success:function (result) {success(result);},
+        error: function (jqXHR, errorType, exception) {error(jqXHR, errorType, exception);},
         //Options to tell jQuery not to process data or worry about content-type.
         cache: false,
         contentType: false,

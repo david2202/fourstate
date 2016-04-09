@@ -18,10 +18,20 @@
                 if(e.keyCode == 13) {
                     var dpid=$("#scan").val();
                     lookupAddress(dpid, function(deliveryPoint) {
-                        $("#dpid").text(dpid);
-                        $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
-                        $("#scan").val("");
-                    });
+                            $("#dpid").text(dpid);
+                            $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
+                            $("#scan").val("");
+                        },
+                        function(jqXHR, errorType, exception) {
+                            $("#dpid").text(dpid);
+                            $("#scan").val("");
+                            if (jqXHR.status && jqXHR.status==404) {
+                                $("#address").text("Not Found");
+                            } else {
+                                $("#address").text(errorType);
+                            }
+                        }
+                    );
                 }
             });
         });

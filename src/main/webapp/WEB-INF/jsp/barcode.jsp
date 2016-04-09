@@ -221,8 +221,16 @@
                 $("#dpid").text(dpid);
                 $("#status").text(status);
                 lookupAddress(dpid, function(deliveryPoint) {
-                    $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
-                });
+                        $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
+                    },
+                    function(jqXHR, errorType, exception) {
+                        if (jqXHR.status && jqXHR.status==404) {
+                            $("#address").text("Not Found");
+                        } else {
+                            $("#address").text(errorType);
+                        }
+                    }
+                );
                 scanSound.play();
                 return true;
             }
