@@ -72,7 +72,7 @@
         var barCentreOffset = Math.floor(maxBarWidth / 2);
         var barBrightnessThreshold = 80;
         var barLengthTolerancePercent = 0.20;
-        var scanSound = new Audio('http://10.42.0.1:8080/sounds/scannerBeep.mp3');
+        var scanSound = new Audio('http://' + window.location.hostname + ':8080/sounds/scannerBeep.mp3');
 
         var scanTimer;
 
