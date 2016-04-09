@@ -72,13 +72,13 @@
         var barCentreOffset = Math.floor(barWidth / 2);
         var barBrightnessThreshold = 80;
         var barLengthTolerancePercent = 0.20;
-        var scanSound = new Audio('sounds/scannerBeep.mp3');
+        var scanSound = new Audio('http://10.42.0.1:8080/sounds/scannerBeep.mp3');
 
         var scanTimer;
 
         var canvas = document.createElement('canvas');
         canvas.width = cameraWidth;
-        canvas.height = cameraHeight;
+        canvas.height = scannerHeight;
 
         function scan() {
             $("#scanner").removeClass("scanner-success scanner-failed");
@@ -123,8 +123,6 @@
         }
 
         function scanRow(imageData, row, width) {
-            var pixels = getImageData(imageData, width, 0, row, width, 1);
-
             currentBar = false;
             var barStartCol = 0;
             var barEndCol = 0;
@@ -135,9 +133,11 @@
             var barIndex = 0;
 
             for (var col = 0; col < width; col++) {
-                var red = pixels[col * 4];
-                var green = pixels[(col * 4) + 1];
-                var blue = pixels[(col * 4) + 2];
+                var pixel = getPixel(imageData, width, col, row);
+                var red = pixel[0];
+                var green = pixel[1];
+                var blue = pixel[2];
+
                 var brightness = fnBrightness(red, green, blue);
                 if (!currentBar && brightness < barBrightnessThreshold) {
                     currentBar = true;
@@ -241,12 +241,22 @@
             }
         }
 
+        function getPixel(fullImageData, imageWidth, x, y) {
+            var pixel = [];
+            for (var i = 0; i < 4; i++) {
+                var pos = (y*imageWidth*4) + (x*4) + i;
+                pixel[i] = fullImageData[(y*imageWidth*4) + (x*4) + i];
+            }
+            return pixel;
+        }
+
         function fnBrightness(red, green, blue) {
             return (0.33 * red) + (0.5 * green) + (0.16 * blue);
         }
 
         function init() {
             MediaStreamTrack.getSources(gotSources);
+
             scanTimer = setInterval(function() {
                 scan();
             }, 200);
@@ -318,7 +328,7 @@
     <div class="container">
         <div class="row">
             <div id="scanner" class="scanner scanner-failed">
-                <video id="video" width="640" autoplay muted translate="false"/>
+                <video id="video" width="640" autoplay translate="false"/>
             </div>
             <div class="overlay" />
         </div>
