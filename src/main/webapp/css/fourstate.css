@@ -23,3 +23,13 @@ table.barcode td {
 tr#row1 td {
     background-color: #ccc
 }
+
+.success {
+    background-color: green;
+}
+.problem {
+    background-color: orange;
+}
+.failure {
+    background-color: red;
+}

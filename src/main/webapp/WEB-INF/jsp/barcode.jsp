@@ -226,10 +226,16 @@
                 $("#status").text(status);
                 lookupAddress(dpid, function(deliveryPoint) {
                         $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
+                        if (inf.damaged) {
+                            $("#statusDiv").removeClass("success failure").addClass("problem");
+                        } else {
+                            $("#statusDiv").removeClass("problem failure").addClass("success");
+                        }
                     },
                     function(jqXHR, errorType, exception) {
                         if (jqXHR.status && jqXHR.status==404) {
                             $("#address").text("Not Found");
+                            $("#statusDiv").removeClass("success failure").addClass("problem");
                         } else {
                             $("#address").text(errorType);
                         }
@@ -356,7 +362,7 @@
             <div class="col-xs-6">
                 <span id="address">Address</span>
             </div>
-            <div class="col-xs-3">
+            <div id="statusDiv" class="col-xs-3">
                 <span id="status">Status</span>
             </div>
         </div>
