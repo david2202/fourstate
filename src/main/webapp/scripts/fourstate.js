@@ -18,7 +18,7 @@ function lookupAddress(dpid, success, error) {
     });
 }
 
-// Sourced from
+// Sourced from http://bobcodes.weebly.com/auspost.html
 
 // The 4 bar types in numerical order
 var bar_table = 'FADT';
