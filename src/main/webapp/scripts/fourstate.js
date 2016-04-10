@@ -328,6 +328,10 @@ function decode_format(inf) {
             inf.format_type = 'Reply Paid Barcode';
             inf.full_length = 37;
             break;
+         case '52':
+            inf.format_type = 'Reply Paid Barcode';
+            inf.full_length = 52;
+            break;
          case '59':
             inf.format_type = 'Customer Barcode 2';
             inf.full_length = 52;
