@@ -48,31 +48,15 @@
 
     <title>Barcode recognition with JavaScript</title>
     <script>
-        // H = Full bar
-        // A = Ascender
-        // D = Descender
-        // T = Tracking (short bar)
-        var barcodeStateDigits = [];
-        barcodeStateDigits["HH"] = "0";
-        barcodeStateDigits["HA"] = "1";
-        barcodeStateDigits["HD"] = "2";
-        barcodeStateDigits["AH"] = "3";
-        barcodeStateDigits["AA"] = "4";
-        barcodeStateDigits["AD"] = "5";
-        barcodeStateDigits["DH"] = "6";
-        barcodeStateDigits["DA"] = "7";
-        barcodeStateDigits["DD"] = "8";
-        barcodeStateDigits["TH"] = "9";
-
         var cameraWidth = 640;
         var cameraHeight = 480;
         var scannerHeight = 50;
         var scanRows = 4;
-        var maxBarWidth = Math.floor(cameraWidth / 67 / 2); // 67 column barcode with spaces
+        var maxBarWidth = Math.ceil(cameraWidth / 67 / 2); // 67 column barcode with spaces
         var barCentreOffset = Math.floor(maxBarWidth / 2);
         var barBrightnessThreshold = 80;
         var barLengthTolerancePercent = 0.20;
-        var scanSound = new Audio('http://' + window.location.hostname + ':8080/sounds/scannerBeep.mp3');
+        var scanSound = new Audio('http://' + window.location.hostname + ':${httpPort}/sounds/scannerBeep.mp3');
 
         var scanTimer;
 
@@ -81,8 +65,7 @@
         canvas.height = scannerHeight;
 
         function scan() {
-            $("#scanner").removeClass("scanner-success scanner-failed");
-            $("#scanner").addClass("scanner-scanning");
+            $("#scanner").removeClass("scanner-success scanner-failed").addClass("scanner-scanning");
             var doc = document,
                 img = doc.getElementById("barcode"),
                 width = canvas.width,
@@ -95,15 +78,14 @@
             var row = Math.round(scannerHeight/2);
 
             // This function is extremely slow on mobile, so we need to only do it once
-            // and then work with the data we get back using a local function
+            // and then work with the data we get back using the local function getPixel
             var imageData = ctx.getImageData(0, 0, width, height).data;
             var success = false;
             for (var i = (scanRows / -2); i <= (scanRows / 2) - 1; i++) {
                 var result = scanRow(imageData, row + i, width);
                 if (result.bars.length == 37 || result.bars.length == 52 || result.bars.length == 67) {
                     if (decodeResult(result)) {
-                        $("#scanner").removeClass("scanner-scanning scanner-failed");
-                        $("#scanner").addClass("scanner-success");
+                        $("#scanner").removeClass("scanner-scanning scanner-failed").addClass("scanner-success");
                         clearInterval(scanTimer);
                         var interval = setInterval(function() {
                             clearInterval(interval);
@@ -117,8 +99,7 @@
                 }
             }
             if (!success) {
-                $("#scanner").addClass("scanner-failed");
-                $("#scanner").removeClass("scanner-success scanner-scanning");
+                $("#scanner").removeClass("scanner-success scanner-scanning").addClass("scanner-failed");
             }
         }
 
@@ -133,12 +114,9 @@
 
             for (var col = 0; col < width; col++) {
                 var pixel = getPixel(imageData, width, col, row);
-                var red = pixel[0];
-                var green = pixel[1];
-                var blue = pixel[2];
-
-                var brightness = fnBrightness(red, green, blue);
-                if (!currentBar && brightness < barBrightnessThreshold) {
+                var brightness = fnBrightness(pixel[0], pixel[1], pixel[2]);
+                if (!currentBar && brightness <= barBrightnessThreshold) {
+                    // We're not currently in a bar and this pixel is dark enough to be a bar
                     currentBar = true;
                     barStartCol = col;
                 } else if (currentBar && brightness > barBrightnessThreshold) {
@@ -147,11 +125,12 @@
                     barEndCol = col - 1;
                     var barWidth = barEndCol - barStartCol + 1;
                     if (barWidth > maxBarWidth) {
-                        // Not a bar, so start again
+                        // Too wide to be a bar, so start again
                         bars = [];
                         var highestY = -1;
                         var lowestY = 999;
                     } else {
+                        // We've got a bar, so measure how high it is
                         var minY = 999;
                         var maxY = -1;
 
@@ -226,16 +205,16 @@
                 $("#status").text(status);
                 lookupAddress(dpid, function(deliveryPoint) {
                         $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
-                        if (inf.damaged) {
+                        if (inf.damaged || inf.format_type === "Unknown Format Code") {
                             $("#statusDiv").removeClass("success failure").addClass("problem");
                         } else {
                             $("#statusDiv").removeClass("problem failure").addClass("success");
                         }
                     },
                     function(jqXHR, errorType, exception) {
+                        $("#statusDiv").removeClass("success failure").addClass("problem");
                         if (jqXHR.status && jqXHR.status==404) {
                             $("#address").text("Not Found");
-                            $("#statusDiv").removeClass("success failure").addClass("problem");
                         } else {
                             $("#address").text(errorType);
                         }
@@ -245,18 +224,6 @@
                 return true;
             }
             return false;
-        }
-
-        function getImageData(fullImageData, imageWidth, x, y, width, height) {
-            var retVal = [];
-            for (var row = y; row < row + height; row++) {
-                for (var col = x; col < x + width; col++) {
-                    for (var pixel = 0; pixel < 4; pixel++) {
-                        retVal.push(fullImageData[(row*imageWidth*4) + (col*4) + pixel]);
-                    }
-                }
-                return retVal;
-            }
         }
 
         function getPixel(fullImageData, imageWidth, x, y) {
@@ -281,27 +248,27 @@
         }
 
         function gotSources(sourceInfos) {
-          for (var i = 0; i !== sourceInfos.length; ++i) {
-            var sourceInfo = sourceInfos[i];
-            var option = document.createElement('option');
-            option.value = sourceInfo.id;
-            if (sourceInfo.kind === 'video') {
-                if (sourceInfo.label.indexOf("back") > -1) {
-                    sourceSelected(sourceInfo.id);
-                    return;
+            for (var i = 0; i !== sourceInfos.length; ++i) {
+                var sourceInfo = sourceInfos[i];
+                var option = document.createElement('option');
+                option.value = sourceInfo.id;
+                if (sourceInfo.kind === 'video') {
+                    if (sourceInfo.facing === 'environment' || sourceInfo.label.indexOf('back') > -1) {
+                        sourceSelected(sourceInfo.id);
+                        return;
+                    }
                 }
             }
-          }
-          // Didn't find a back camera so use the first one
-          for (var i = 0; i !== sourceInfos.length; ++i) {
-            var sourceInfo = sourceInfos[i];
-            var option = document.createElement('option');
-            option.value = sourceInfo.id;
-            if (sourceInfo.kind === 'video') {
-                sourceSelected(sourceInfo.id);
-                break;
+            // Didn't find a back camera so use the first one
+            for (var i = 0; i !== sourceInfos.length; ++i) {
+                var sourceInfo = sourceInfos[i];
+                var option = document.createElement('option');
+                option.value = sourceInfo.id;
+                if (sourceInfo.kind === 'video') {
+                    sourceSelected(sourceInfo.id);
+                    break;
+                }
             }
-          }
         }
 
         function sourceSelected(videoSource) {
@@ -355,14 +322,14 @@
                 <script>generateBarcodeTable();</script>
             </div>
         </div>
-        <div class="row address">
+        <div id="statusDiv" class="row address">
             <div class="col-xs-3">
                 <span id="dpid">DPID</span>
             </div>
             <div class="col-xs-6">
                 <span id="address">Address</span>
             </div>
-            <div id="statusDiv" class="col-xs-3">
+            <div class="col-xs-3">
                 <span id="status">Status</span>
             </div>
         </div>

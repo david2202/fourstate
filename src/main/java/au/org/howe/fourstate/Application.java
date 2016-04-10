@@ -9,9 +9,6 @@ import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletCon
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.SocketUtils;
-
-import java.util.Arrays;
 
 @SpringBootApplication
 public class Application extends SpringBootServletInitializer {
@@ -27,9 +24,14 @@ public class Application extends SpringBootServletInitializer {
         return tomcat;
     }
 
+    @Bean
+    public Integer httpPort() {
+        return 8080;
+    }
+
     private Connector createStandardConnector() {
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
-        connector.setPort(8080);
+        connector.setPort(httpPort());
         return connector;
     }
 
