@@ -26,8 +26,8 @@
                     var barcodeString = "AT";
                     barcodeString += encode_num(tokens[0], 4);
                     barcodeString += encode_num(tokens[1], 16);
-                    barcodeString += "T";
-                    if (tokens.length = 3) {
+                    if (tokens.length == 3) {
+                        barcodeString += "T";   // Padding
                         var rs = tokens[2].split(" ");
                         barcodeString += three_bars(rs[0]) + three_bars(rs[1])
                               + three_bars(rs[2]) + three_bars(rs[3]);
