@@ -16,8 +16,32 @@
             $("#scan").focus();
             $('#scan').keydown(function (e){
                 if(e.keyCode == 13) {
-                    var dpid=$("#scan").val();
-                    lookupAddress(dpid, function(deliveryPoint) {
+                    var scan=$("#scan").val();
+                    var tokens = scan.split(",");
+
+                    var barcodeString = "AT";
+                    barcodeString += encode_num(tokens[0], 4);
+                    barcodeString += encode_num(tokens[1], 16);
+                    barcodeString += "T";
+                    if (tokens.length = 3) {
+                        var rs = tokens[2].split(" ");
+                        barcodeString += three_bars(rs[0]) + three_bars(rs[1])
+                              + three_bars(rs[2]) + three_bars(rs[3]);
+                    } else {
+                        barcodeString += tokens[2]; // This is sent raw by the scanner (customer data)
+                        var rs = tokens[3].split(" ");
+                        barcodeString += three_bars(rs[0]) + three_bars(rs[1])
+                              + three_bars(rs[2]) + three_bars(rs[3]);
+                    }
+                    barcodeString += "AT";
+                    var inf = do_decode(barcodeString);
+                    show_barcode(inf);
+                    var status = inf.message;
+                    var dpid = inf.dpid;
+
+                    $("#dpid").text(dpid);
+                    $("#status").text(status);
+                    lookupAddress(inf.dpid, function(deliveryPoint) {
                             $("#dpid").text(dpid);
                             $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
                             $("#scan").val("");
@@ -46,12 +70,20 @@
                 <input id="scan" type="text" class="form-control input-lg" />
             </div>
         </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <script>generateBarcodeTable();</script>
+            </div>
+        </div>
         <div class="row address">
             <div class="col-xs-3">
                 <span id="dpid">DPID</span>
             </div>
-            <div class="col-xs-9">
+            <div class="col-xs-6">
                 <span id="address">Address</span>
+            </div>
+            <div class="col-xs-3">
+                <span id="status">Status</span>
             </div>
         </div>
     </div>
