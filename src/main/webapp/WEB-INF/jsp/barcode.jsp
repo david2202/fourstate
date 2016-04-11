@@ -10,6 +10,8 @@
     <script src="<c:url value='/scripts/fourstate.js'/>"></script>
 
     <style>
+        label{display:block}
+
         .scanner {
             width: 640px;
             height: 50px;
@@ -46,7 +48,7 @@
         }
     </style>
 
-    <title>Barcode recognition with JavaScript</title>
+    <title>Customer Barcode Quality Assurance</title>
     <script>
         var cameraWidth = 640;
         var cameraHeight = 480;
@@ -203,7 +205,8 @@
                 console.log("dpid=" + dpid);
                 $("#dpid").text(dpid);
                 $("#status").text(status);
-                lookupAddress(dpid, function(deliveryPoint) {
+                lookupAddress(dpid,
+                    function(deliveryPoint) {
                         $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
                         if (inf.damaged || inf.format_type === "Unknown Format Code") {
                             $("#statusDiv").removeClass("success failure").addClass("problem");
@@ -245,6 +248,10 @@
             scanTimer = setInterval(function() {
                 scan();
             }, 200);
+
+            $("#video").click(function(event) {
+                scanSound.play();
+            });
         }
 
         function gotSources(sourceInfos) {
@@ -318,19 +325,20 @@
             <div class="overlay" />
         </div>
         <div class="row">
-            <div class="col-xs-12">
+            <div class="col-xs-10">
                 <script>generateBarcodeTable();</script>
             </div>
+            <div id="dpidDiv" class="col-xs-2">
+                <label for="dpid" class="control-label">DPID</label>
+                <span id="dpid" />
+            </div>
         </div>
-        <div id="statusDiv" class="row address">
-            <div class="col-xs-3">
-                <span id="dpid">DPID</span>
+        <div class="row address">
+            <div id="addressDiv" class="col-xs-8">
+                <span id="address" />
             </div>
-            <div class="col-xs-6">
-                <span id="address">Address</span>
-            </div>
-            <div class="col-xs-3">
-                <span id="status">Status</span>
+            <div id="statusDiv" class="col-xs-4">
+                <span id="status" />
             </div>
         </div>
     </div>

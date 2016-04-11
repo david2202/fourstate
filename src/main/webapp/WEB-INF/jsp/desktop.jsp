@@ -8,12 +8,16 @@
     <link rel="stylesheet" type="text/css" href="<c:url value='/css/fourstate.css'/>"/>
     <script src="<c:url value='/scripts/jquery-2.1.4.js'/>"></script>
     <script src="<c:url value='/scripts/fourstate.js'/>"></script>
+    <title>Customer Barcode Quality Assurance</title>
 
-    <title>Barcode recognition with JavaScript</title>
-
+    <style>
+        label{display:block}
+    </style>
     <script>
         jQuery(document).ready(function ($) {
-            $("#scan").focus();
+            var focusTimer = setInterval(function() {
+                $("#scan").focus();
+            }, 500);
             $('#scan').keydown(function (e){
                 if(e.keyCode == 13) {
                     var scan=$("#scan").val();
@@ -41,14 +45,21 @@
 
                     $("#dpid").text(dpid);
                     $("#status").text(status);
-                    lookupAddress(inf.dpid, function(deliveryPoint) {
-                            $("#dpid").text(dpid);
+                    $("#scan").val("");
+                    lookupAddress(inf.dpid,
+                        function(deliveryPoint) {
+                            if (inf.damaged || inf.format_type === "Unknown Format Code") {
+                                $("#dpidDiv").removeClass("success failure").addClass("problem");
+                                $("#statusDiv").removeClass("success failure").addClass("problem");
+                            } else {
+                                $("#dpidDiv").removeClass("problem failure").addClass("success");
+                                $("#statusDiv").removeClass("problem failure").addClass("success");
+                            }
                             $("#address").html(deliveryPoint.addressLine1 + "<br/>" + deliveryPoint.addressLine2);
-                            $("#scan").val("");
                         },
                         function(jqXHR, errorType, exception) {
-                            $("#dpid").text(dpid);
-                            $("#scan").val("");
+                            $("#dpidDiv").removeClass("success failure").addClass("problem");
+                            $("#statusDiv").removeClass("success failure").addClass("problem");
                             if (jqXHR.status && jqXHR.status==404) {
                                 $("#address").text("Not Found");
                             } else {
@@ -65,7 +76,7 @@
 <body>
     <div class="container">
         <div class="row">
-            <div class="col-xs-12">
+            <div class="col-xs-6">
                 <label for="scan" class="control-label">Scan</label>
                 <input id="scan" type="text" class="form-control input-lg" />
             </div>
@@ -76,14 +87,16 @@
             </div>
         </div>
         <div class="row address">
-            <div class="col-xs-3">
-                <span id="dpid">DPID</span>
+            <div id="addressDiv" class="col-xs-5">
+                <span id="address" />
             </div>
-            <div class="col-xs-6">
-                <span id="address">Address</span>
+            <div id="dpidDiv" class="col-xs-2">
+                <label for="dpid" class="control-label">DPID</label>
+                <span id="dpid" />
             </div>
-            <div class="col-xs-3">
-                <span id="status">Status</span>
+            <div id="statusDiv" class="col-xs-5">
+                <label for="status" class="control-label">Status</label>
+                <span id="status" />
             </div>
         </div>
     </div>
